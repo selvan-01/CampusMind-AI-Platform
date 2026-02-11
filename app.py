@@ -1,3 +1,4 @@
+
 from flask import Flask, render_template, request, redirect, session, url_for, send_file
 import os
 import mysql.connector
@@ -195,9 +196,31 @@ def student():
     if session.get("role") != "student":
         return redirect("/")
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True, buffered=True)
+    student_id = session.get("student_id")
 
+    # Debug print (remove later)
+    print("Logged Student ID:", student_id)
+
+    if not student_id:
+        return "Student ID not found in session. Please login again."
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # ======================
+    # 1️⃣ Get All Marks (for graph)
+    # ======================
+    cursor.execute("""
+        SELECT semester, year, marks
+        FROM marks
+        WHERE student_id = %s
+        ORDER BY year ASC, semester ASC
+    """, (student_id,))
+    marks_data = cursor.fetchall()
+
+    # ======================
+    # 2️⃣ Get Latest Result
+    # ======================
     cursor.execute("""
         SELECT semester, year, marks,
                CASE WHEN marks >= 40 THEN 'PASS' ELSE 'FAIL' END AS result
@@ -205,13 +228,42 @@ def student():
         WHERE student_id = %s
         ORDER BY year DESC, semester DESC
         LIMIT 1
-    """, (session["student_id"],))
+    """, (student_id,))
+    latest_result = cursor.fetchone()
 
-    result = cursor.fetchone()
+    # ======================
+    # 3️⃣ Attendance Data
+    # ======================
+    cursor.execute("""
+        SELECT subject, percentage
+        FROM attendance
+        WHERE student_id = %s
+    """, (student_id,))
+    attendance_data = cursor.fetchall()
+
+    # ======================
+    # 4️⃣ Overall Attendance
+    # ======================
+    cursor.execute("""
+        SELECT AVG(percentage) as overall
+        FROM attendance
+        WHERE student_id = %s
+    """, (student_id,))
+    overall_row = cursor.fetchone()
+    overall_attendance = overall_row["overall"] if overall_row["overall"] else 0
+
     cursor.close()
     conn.close()
 
-    return render_template("student.html", result=result)
+    return render_template(
+        "student.html",
+        marks_data=marks_data,
+        latest_result=latest_result,
+        attendance_data=attendance_data,
+        overall_attendance=round(overall_attendance, 2)
+    )
+
+
 
 '''@app.route("/admin/departments")
 def admin_departments():
@@ -672,6 +724,121 @@ def delete_user(user_id):
 
     return redirect("/admin/users")
 
+
+@app.route("/faculty/manual-attendance", methods=["GET", "POST"])
+def manual_attendance():
+
+    if session.get("role") != "faculty":
+        return redirect("/")
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Get students for dropdown
+    cursor.execute("SELECT student_id, name FROM students")
+    students = cursor.fetchall()
+
+    if request.method == "POST":
+        student_id = request.form["student_id"]
+        subject = request.form["subject"]
+        status = request.form["status"]
+        date = request.form["date"]
+
+        cursor.execute("""
+            INSERT INTO manual_attendance (student_id, subject, date, status)
+            VALUES (%s, %s, %s, %s)
+        """, (student_id, subject, date, status))
+
+        conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    return render_template("manual_attendance.html", students=students)
+
+
+@app.route("/faculty/internal-marks", methods=["GET","POST"])
+def internal_marks():
+
+    if session.get("role") != "faculty":
+        return redirect("/")
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT student_id, name FROM students")
+    students = cursor.fetchall()
+
+    if request.method == "POST":
+        student_id = request.form["student_id"]
+        subject = request.form["subject"]
+        cia1 = int(request.form["cia1"])
+        cia2 = int(request.form["cia2"])
+        model = int(request.form["model"])
+
+        final_internal = (cia1 + cia2 + model) / 3
+
+        cursor.execute("""
+            INSERT INTO internal_marks
+            (student_id, subject, cia1, cia2, model, final_internal)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (student_id, subject, cia1, cia2, model, final_internal))
+
+        conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    return render_template("internal_marks.html", students=students)
+
+@app.route("/faculty/students")
+def faculty_students():
+
+    if session.get("role") != "faculty":
+        return redirect("/")
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT * FROM students ORDER BY department, year")
+    students = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return render_template(
+        "faculty_students.html",
+        students=students
+    )
+
+@app.route("/faculty/student/<int:student_id>")
+def faculty_student_profile(student_id):
+
+    if session.get("role") != "faculty":
+        return redirect("/")
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT * FROM students WHERE student_id=%s", (student_id,))
+    student = cursor.fetchone()
+
+    cursor.execute("SELECT subject, percentage FROM attendance WHERE student_id=%s", (student_id,))
+    attendance = cursor.fetchall()
+
+    cursor.execute("SELECT subject, marks FROM marks WHERE student_id=%s", (student_id,))
+    marks = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return render_template(
+        "faculty_student_profile.html",
+        student=student,
+        attendance=attendance,
+        marks=marks
+    )
+
 # ================= RESULT PDF =================
 '''@app.route("/download_result")
 def download_result():
@@ -697,6 +864,39 @@ def download_result():
     conn.close()
 
     return send_file(generate_result_pdf(data, data), as_attachment=True)'''
+
+# ================= DOWNLOAD STUDENT RESULT PDF =================
+@app.route("/download_result")
+def download_result():
+
+    if session.get("role") != "student":
+        return redirect("/")
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT s.student_id, s.name,
+               m.semester, m.year, m.marks,
+               CASE WHEN m.marks >= 40 THEN 'PASS' ELSE 'FAIL' END AS result
+        FROM students s
+        JOIN marks m ON s.student_id = m.student_id
+        WHERE s.student_id = %s
+        ORDER BY m.year DESC, m.semester DESC
+        LIMIT 1
+    """, (session["student_id"],))
+
+    data = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    if not data:
+        return "No result found."
+
+    file_path = generate_result_pdf(data, data)
+
+    return send_file(file_path, as_attachment=True)
 
 # ================= DOWNLOAD INSIGHT REPORT =================
 # ================= DOWNLOAD INSIGHT REPORT =================
@@ -903,16 +1103,27 @@ def upload_pdf():
 # ================= CHATBOT =================
 @app.route("/chat", methods=["POST"])
 def chat():
+
     if not session.get("role"):
         return "Please login again."
 
-    print("SESSION STUDENT_ID:", session.get("student_id"))
-
     question = request.form.get("question", "")
-    return route_question(question, {
+
+
+    print("QUESTION RECEIVED:", question)
+    print("ROLE:", session.get("role"))
+    print("STUDENT ID:", session.get("student_id"))
+
+    response = route_question(question, {
         "role": session["role"],
-        "student_id": session["student_id"]
+        "student_id": session.get("student_id")
     })
+
+    print("RESPONSE:", response)
+
+    return response
+
+
 
 
 # ================= ADMIN CREATE USER =================
@@ -1042,7 +1253,8 @@ def send_exam_reminder():
 
     return "Exam Reminder Sent"
 
-'''@app.route("/faculty/download-class-report")
+'''
+@app.route("/faculty/download-class-report")
 def download_class_report():
     if session.get("role") != "faculty":
         return redirect("/")
@@ -1078,7 +1290,7 @@ def download_class_report():
     file_path = "class_report.pdf"
     generate_insight_pdf(data, file_path)
 
-    return send_file(file_path, as_attachment=True)'''
+    return send_file(file_path, as_attachment=True)
 @app.route("/download_class_report")
 def download_class_report():
 
@@ -1143,8 +1355,75 @@ def download_class_report():
         toppers
     )
 
+    return send_file(file_path, as_attachment=True)'''
+    
+@app.route("/faculty/download-class-report")
+def download_class_report():
+
+    if session.get("role") not in ["admin", "faculty"]:
+        return redirect("/")
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Total Students
+    cursor.execute("SELECT COUNT(*) as total FROM students")
+    total_students = cursor.fetchone()["total"]
+
+    # Average Marks
+    cursor.execute("SELECT AVG(marks) as avg_marks FROM marks")
+    avg_marks = cursor.fetchone()["avg_marks"] or 0
+
+    # Risk Students
+    cursor.execute("SELECT COUNT(*) as risk FROM marks WHERE marks < 40")
+    risk_students = cursor.fetchone()["risk"]
+
+    # Pass / Fail
+    cursor.execute("""
+        SELECT 
+        SUM(CASE WHEN marks >= 40 THEN 1 ELSE 0 END) as passed,
+        SUM(CASE WHEN marks < 40 THEN 1 ELSE 0 END) as failed
+        FROM marks
+    """)
+    result_data = cursor.fetchone()
+
+    # Department Breakdown
+    cursor.execute("""
+        SELECT department, COUNT(*) as total
+        FROM students
+        GROUP BY department
+    """)
+    dept_data = cursor.fetchall()
+
+    # Top 5 Toppers
+    cursor.execute("""
+        SELECT s.name, SUM(m.marks) as total_marks
+        FROM students s
+        JOIN marks m ON s.student_id = m.student_id
+        GROUP BY s.student_id
+        ORDER BY total_marks DESC
+        LIMIT 5
+    """)
+    toppers = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    file_path = "class_report.pdf"
+
+    generate_insight_pdf(
+        file_path,
+        total_students,
+        avg_marks,
+        risk_students,
+        result_data,
+        dept_data,
+        toppers
+    )
+
     return send_file(file_path, as_attachment=True)
 
+    
 # ================= SCHEDULER =================
 scheduler = BackgroundScheduler(daemon=True)
 scheduler.add_job(low_attendance_agent, "interval", days=1)

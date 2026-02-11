@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card modern-card">
+
+<h2>🧮 Internal Marks Calculator</h2>
+
+<form method="POST">
+
+    <label>Select Student</label>
+    <select name="student_id">
+        {% for s in students %}
+        <option value="{{ s.student_id }}">
+            {{ s.name }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <label>Subject</label>
+    <input type="text" name="subject" required>
+
+    <label>CIA 1</label>
+    <input type="number" name="cia1" required>
+
+    <label>CIA 2</label>
+    <input type="number" name="cia2" required>
+
+    <label>Model Exam</label>
+    <input type="number" name="model" required>
+
+    <button type="submit" class="btn-modern">
+        Calculate & Save
+    </button>
+
+</form>
+
+</div>
+
+{% endblock %}

@@ -1,5 +1,4 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 
 <!-- ===================== -->
 <!-- STUDENT DASHBOARD -->
@@ -18,122 +17,243 @@
 <!-- ===================== -->
 <!-- EXAM RESULT CARD -->
 <!-- ===================== -->
-{% if result %}
+
+{% if latest_result %}
+
 <div class="card fade-in mt-20">
   <h3>📄 Latest Exam Result</h3>
 
-  <p><strong>Semester:</strong> {{ result.semester }}</p>
-  <p><strong>Year:</strong> {{ result.year }}</p>
-  <p><strong>Marks:</strong> {{ result.marks }}</p>
+  <p><strong>Semester:</strong> {{ latest_result.semester }}</p>
+  <p><strong>Year:</strong> {{ latest_result.year }}</p>
+  <p><strong>Marks:</strong> {{ latest_result.marks }}</p>
 
-  {% if result.result == "PASS" %}
-    <h2 class="stat-green">✅ PASS</h2>
+  {% if latest_result.result == "PASS" %}
+  <h2 class="stat-green">✅ PASS</h2>
   {% else %}
-    <h2 class="stat-red">❌ FAIL</h2>
+  <h2 class="stat-red">❌ FAIL</h2>
   {% endif %}
 
-  <a href="/download_result" class="btn mt-20">
-    📄 Download Result PDF
-  </a>
+  <a href="/download_result" class="btn-modern"> 📄 Download Result PDF </a>
 </div>
+
 {% else %}
+
 <div class="card fade-in mt-20">
   <p>📌 No exam result published yet.</p>
 </div>
+
+{% endif %}
+
+<!-- ===================== -->
+<!-- 📊 Academic Analytics -->
+<!-- ===================== -->
+
+{% if attendance_data %}
+
+<div class="card mt-30">
+  <h3>📊 Attendance Overview</h3>
+
+  <h4>
+    Overall Attendance:
+    <span style="color: {{ 'green' if overall_attendance >= 75 else 'red' }}">
+      {{ overall_attendance }}%
+    </span>
+  </h4>
+
+  <canvas id="attendanceChart"></canvas>
+</div>
+
+{% endif %} {% if marks_data %}
+
+<div class="card mt-30">
+  <h3>📈 Marks Trend</h3>
+  <canvas id="marksTrendChart"></canvas>
+</div>
+
 {% endif %}
 
 <!-- ===================== -->
 <!-- AI CHAT ASSISTANT -->
 <!-- ===================== -->
-<div class="card fade-in mt-20">
 
+<div class="card fade-in mt-20">
   <h3>
     <i class="fa-solid fa-robot"></i>
     Student AI Assistant
   </h3>
 
-  <p style="font-size:14px; color:#6b7280;">
+  <p style="font-size: 14px; color: #6b7280">
     Ask only about <strong>your</strong> attendance, marks, results, rules…
   </p>
 
-  <!-- CHAT BOX -->
   <div id="chatBox" class="chat-box">
-
-    <!-- AI WELCOME -->
     <div class="chat-row ai">
       <div class="chat-avatar">🤖</div>
       <div class="chat-bubble ai">
         Hi! I’m your CampusMind AI. Ask me about your academics 🙂
       </div>
     </div>
-
   </div>
 
-  <!-- INPUT BAR -->
   <div class="chat-input">
     <input
       id="question"
       placeholder="Type your question…"
-      onkeydown="if(event.key==='Enter') sendMessage()"
+      onkeydown="if (event.key === 'Enter') sendMessage();"
     />
     <button onclick="sendMessage()">Send</button>
   </div>
-
 </div>
+
+<!-- ===================== -->
+<!-- CHART SCRIPT -->
+<!-- ===================== -->
+
+<script>
+  const attendanceData = {{ attendance_data | tojson }};
+  const marksData = {{ marks_data | tojson }};
+
+  // Attendance Chart
+  if (attendanceData.length > 0) {
+    new Chart(document.getElementById("attendanceChart"), {
+        type: "bar",
+        data: {
+            labels: attendanceData.map(a => a.subject),
+            datasets: [{
+                label: "Attendance %",
+                data: attendanceData.map(a => a.percentage),
+                backgroundColor: attendanceData.map(a =>
+                    a.percentage >= 75 ? "#16a34a" : "#dc2626"
+                )
+            }]
+        }
+    });
+  }
+
+  // Marks Trend Chart
+  if (marksData.length > 0) {
+    new Chart(document.getElementById("marksTrendChart"), {
+        type: "line",
+        data: {
+            labels: marksData.map(m => "Sem " + m.semester),
+            datasets: [{
+                label: "Marks",
+                data: marksData.map(m => m.marks),
+                borderColor: "#3b82f6",
+                fill: false,
+                tension: 0.3
+            }]
+        }
+    });
+  }
+</script>
+
+<script>
+  function sendMessage() {
+    const input = document.getElementById("question");
+    const msg = input.value.trim();
+
+    if (!msg) return;
+
+    const chatBox = document.getElementById("chatBox");
+
+    // User message
+    const userRow = document.createElement("div");
+    userRow.className = "chat-row user";
+    userRow.innerHTML = `
+    <div class="chat-bubble user">${msg}</div>
+    <div class="chat-avatar">🎓</div>
+  `;
+    chatBox.appendChild(userRow);
+
+    input.value = "";
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    // Send to Flask
+    fetch("/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "question=" + encodeURIComponent(msg),
+    })
+      .then((response) => response.text())
+      .then((reply) => {
+        const aiRow = document.createElement("div");
+        aiRow.className = "chat-row ai";
+        aiRow.innerHTML = `
+      <div class="chat-avatar">🤖</div>
+      <div class="chat-bubble ai">${reply}</div>
+    `;
+
+        chatBox.appendChild(aiRow);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  }
+</script>
+
+{% endblock %}
 
 <!-- ===================== -->
 <!-- CHAT SCRIPT -->
 <!-- ===================== -->
+
 <script>
-function sendMessage() {
-  const input = document.getElementById("question");
-  const msg = input.value.trim();
-  if (!msg) return;
+  function sendMessage() {
+    const input = document.getElementById("question");
+    const msg = input.value.trim();
 
-  const chatBox = document.getElementById("chatBox");
+    if (!msg) return;
 
-  // USER MESSAGE (RIGHT)
-  const userRow = document.createElement("div");
-  userRow.className = "chat-row user";
-  userRow.innerHTML = `
-    <div class="chat-bubble user">${msg}</div>
-    <div class="chat-avatar">🎓</div>
-  `;
-  chatBox.appendChild(userRow);
+    const chatBox = document.getElementById("chatBox");
 
-  input.value = "";
-  chatBox.scrollTop = chatBox.scrollHeight;
-
-  // AI TYPING
-  const typingRow = document.createElement("div");
-  typingRow.className = "chat-row ai";
-  typingRow.id = "typingRow";
-  typingRow.innerHTML = `
-    <div class="chat-avatar">🤖</div>
-    <div class="chat-bubble ai">Typing…</div>
-  `;
-  chatBox.appendChild(typingRow);
-  chatBox.scrollTop = chatBox.scrollHeight;
-
-  fetch("/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: "question=" + encodeURIComponent(msg)
-  })
-  .then(res => res.text())
-  .then(reply => {
-    typingRow.remove();
-
-    const aiRow = document.createElement("div");
-    aiRow.className = "chat-row ai";
-    aiRow.innerHTML = `
-      <div class="chat-avatar">🤖</div>
-      <div class="chat-bubble ai">${reply}</div>
+    // USER MESSAGE
+    const userRow = document.createElement("div");
+    userRow.className = "chat-row user";
+    userRow.innerHTML = `
+        <div class="chat-bubble user">${msg}</div>
+        <div class="chat-avatar">🎓</div>
     `;
-    chatBox.appendChild(aiRow);
-    chatBox.scrollTop = chatBox.scrollHeight;
-  });
-}
-</script>
+    chatBox.appendChild(userRow);
 
-{% endblock %}
+    input.value = "";
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    // AI TYPING
+    const typingRow = document.createElement("div");
+    typingRow.className = "chat-row ai";
+    typingRow.id = "typingRow";
+    typingRow.innerHTML = `
+        <div class="chat-avatar">🤖</div>
+        <div class="chat-bubble ai">Typing...</div>
+    `;
+    chatBox.appendChild(typingRow);
+
+    fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "question=" + encodeURIComponent(msg),
+    })
+      .then((response) => response.text())
+      .then((reply) => {
+        typingRow.remove();
+
+        const aiRow = document.createElement("div");
+        aiRow.className = "chat-row ai";
+        aiRow.innerHTML = `
+            <div class="chat-avatar">🤖</div>
+            <div class="chat-bubble ai">${reply}</div>
+        `;
+
+        chatBox.appendChild(aiRow);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      })
+      .catch((error) => {
+        typingRow.remove();
+        console.error("Chat error:", error);
+      });
+  }
+</script>

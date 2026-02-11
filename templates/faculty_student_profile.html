@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- ================= HEADER ================= -->
+<div class="section-title">
+  <h2>📊 Student Profile</h2>
+</div>
+
+<!-- ================= PROFILE CARD ================= -->
+<div class="card profile-card">
+
+  <div class="profile-header">
+    <h3>{{ student.name }}</h3>
+    <span class="profile-id">ID: {{ student.student_id }}</span>
+  </div>
+
+  <div class="profile-info">
+    <p><strong>Department:</strong> {{ student.department }}</p>
+    <p><strong>Year:</strong> {{ student.year }}</p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ================= RISK ANALYSIS ================= -->
+  <h4 class="risk-title">⚠ Risk Analysis</h4>
+
+  {% set risk_found = false %}
+
+  <!-- Attendance Risk -->
+  {% for a in attendance %}
+      {% if a.percentage < 75 %}
+          {% set risk_found = true %}
+          <div class="risk-badge">
+              🔴 Low Attendance in {{ a.subject }}
+              <span>({{ a.percentage }}%)</span>
+          </div>
+      {% endif %}
+  {% endfor %}
+
+  <!-- Marks Risk -->
+  {% for m in marks %}
+      {% if m.marks < 40 %}
+          {% set risk_found = true %}
+          <div class="risk-badge">
+              🔴 Failed in {{ m.subject }}
+              <span>({{ m.marks }})</span>
+          </div>
+      {% endif %}
+  {% endfor %}
+
+  {% if not risk_found %}
+      <div class="safe-badge">
+          🟢 Student is Academically Safe
+      </div>
+  {% endif %}
+
+</div>
+
+
+<!-- ================= ANALYTICS SECTION ================= -->
+<div class="grid mt-30">
+
+  <div class="card chart-card">
+    <h3>📘 Attendance Overview</h3>
+    <canvas id="attendanceChart"></canvas>
+  </div>
+
+  <div class="card chart-card">
+    <h3>📝 Marks Overview</h3>
+    <canvas id="marksChart"></canvas>
+  </div>
+
+</div>
+
+
+<!-- ================= CHART SCRIPT ================= -->
+<script>
+const attendanceData = {{ attendance|tojson }};
+const marksData = {{ marks|tojson }};
+
+// Attendance Chart
+new Chart(document.getElementById("attendanceChart"), {
+  type: 'bar',
+  data: {
+    labels: attendanceData.map(a => a.subject),
+    datasets: [{
+      label: "Attendance %",
+      data: attendanceData.map(a => a.percentage),
+      backgroundColor: "#3b82f6",
+      borderRadius: 8
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false }
+    }
+  }
+});
+
+// Marks Chart
+new Chart(document.getElementById("marksChart"), {
+  type: 'bar',
+  data: {
+    labels: marksData.map(m => m.subject),
+    datasets: [{
+      label: "Marks",
+      data: marksData.map(m => m.marks),
+      backgroundColor: "#10b981",
+      borderRadius: 8
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false }
+    }
+  }
+});
+</script>
+
+{% endblock %}

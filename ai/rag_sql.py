@@ -1,168 +1,129 @@
 import mysql.connector
-import ollama
 from config import MYSQL_CONFIG
 
 
-def ask_sql(question, user_context):
+def ask_sql(question, role, student_id):
+
     q = question.lower()
-    role = user_context.get("role")
-    student_id = user_context.get("student_id")
 
     try:
         conn = mysql.connector.connect(**MYSQL_CONFIG)
-        cursor = conn.cursor(dictionary=True, buffered=True)
+        cursor = conn.cursor(dictionary=True)
 
-        # =========================
-        # 🔐 STUDENT SAFETY CHECK
-        # =========================
-        if role == "student" and not student_id:
-            return "❌ Student identity not linked."
+        # =============================
+        # 🎓 STUDENT (STRICT ACCESS)
+        # =============================
+        if role == "student":
 
-        # =========================
-        # 1️⃣ ATTENDANCE
-        # =========================
-        if "attendance" in q:
+            if not student_id:
+                return "Student identity not linked."
 
-            # 🎓 STUDENT → own attendance
-            if role == "student":
+            # Attendance
+            if "attendance" in q:
                 cursor.execute("""
-                    SELECT month, year, percentage
+                    SELECT subject, percentage
                     FROM attendance
                     WHERE student_id = %s
-                    ORDER BY year DESC, month DESC
-                    LIMIT 3
                 """, (student_id,))
-
                 rows = cursor.fetchall()
+
                 if not rows:
-                    return "Attendance data not available."
+                    return "No attendance data found."
 
                 return "\n".join(
-                    [f"{r['month']} {r['year']} → {r['percentage']}%"
-                     for r in rows]
+                    [f"{r['subject']} → {r['percentage']}%" for r in rows]
                 )
 
-            # 👨‍🏫 FACULTY / 👑 ADMIN → low attendance list
-            else:
-                cursor.execute("""
-                    SELECT s.name, a.percentage
-                    FROM attendance a
-                    JOIN students s ON a.student_id = s.student_id
-                    ORDER BY a.percentage ASC
-                    LIMIT 5
-                """)
-
-                rows = cursor.fetchall()
-                if not rows:
-                    return "Attendance data not available."
-
-                return "📉 Low Attendance Students:\n" + "\n".join(
-                    [f"{r['name']} → {r['percentage']}%"
-                     for r in rows]
-                )
-
-        # =========================
-        # 2️⃣ RESULT / PASS / FAIL
-        # =========================
-        if "result" in q or "pass" in q or "fail" in q:
-
-            # 🎓 STUDENT → own result
-            if role == "student":
-                cursor.execute("""
-                    SELECT semester, year, marks,
-                           CASE WHEN marks >= 40 THEN 'PASS'
-                                ELSE 'FAIL' END AS result
-                    FROM marks
-                    WHERE student_id = %s
-                    ORDER BY year DESC, semester DESC
-                    LIMIT 1
-                """, (student_id,))
-
-                row = cursor.fetchone()
-                if not row:
-                    return "Result data not available."
-
-                return (
-                    f"📄 Latest Result\n"
-                    f"Semester: {row['semester']}\n"
-                    f"Year: {row['year']}\n"
-                    f"Marks: {row['marks']}\n"
-                    f"Status: {row['result']}"
-                )
-
-            # 👨‍🏫 FACULTY / 👑 ADMIN → recent results
-            else:
-                cursor.execute("""
-                    SELECT s.name, m.marks,
-                           CASE WHEN m.marks >= 40 THEN 'PASS'
-                                ELSE 'FAIL' END AS result
-                    FROM marks m
-                    JOIN students s ON m.student_id = s.student_id
-                    ORDER BY m.year DESC
-                    LIMIT 5
-                """)
-
-                rows = cursor.fetchall()
-                if not rows:
-                    return "Result data not available."
-
-                return "📊 Recent Results:\n" + "\n".join(
-                    [f"{r['name']} → {r['marks']} ({r['result']})"
-                     for r in rows]
-                )
-
-        # =========================
-        # 3️⃣ MARKS / PERFORMANCE
-        # =========================
-        if "mark" in q or "score" in q or "performance" in q:
-
-            # 🎓 STUDENT → own performance
-            if role == "student":
+            # Marks
+            if "mark" in q or "result" in q:
                 cursor.execute("""
                     SELECT semester, year, marks
                     FROM marks
                     WHERE student_id = %s
                     ORDER BY year DESC, semester DESC
-                    LIMIT 3
                 """, (student_id,))
-
                 rows = cursor.fetchall()
-                if not rows:
-                    return "Marks data not available."
 
-                return "📘 Your Recent Marks:\n" + "\n".join(
+                if not rows:
+                    return "No marks data found."
+
+                return "\n".join(
                     [f"Sem {r['semester']} ({r['year']}) → {r['marks']}"
                      for r in rows]
                 )
 
-            # 👨‍🏫 FACULTY / 👑 ADMIN → toppers
-            else:
+            return "You can only ask about your own academic data."
+
+        # =============================
+        # 👨‍🏫 FACULTY / 👑 ADMIN
+        # =============================
+        else:
+
+            # Low attendance
+            if "low attendance" in q:
                 cursor.execute("""
-                    SELECT s.name, AVG(m.marks) AS avg_marks
+                    SELECT s.name, a.percentage
+                    FROM attendance a
+                    JOIN students s ON s.student_id = a.student_id
+                    WHERE a.percentage < 75
+                    ORDER BY a.percentage ASC
+                """)
+                rows = cursor.fetchall()
+
+                if not rows:
+                    return "No low attendance students."
+
+                return "Low Attendance Students:\n" + "\n".join(
+                    [f"{r['name']} → {r['percentage']}%"
+                     for r in rows]
+                )
+
+            # Top performers
+            if "top" in q or "best" in q:
+                cursor.execute("""
+                    SELECT s.name, AVG(m.marks) as avg_marks
                     FROM marks m
-                    JOIN students s ON m.student_id = s.student_id
+                    JOIN students s ON s.student_id = m.student_id
                     GROUP BY s.student_id
                     ORDER BY avg_marks DESC
                     LIMIT 5
                 """)
-
                 rows = cursor.fetchall()
-                if not rows:
-                    return "Marks data not available."
 
-                return "🏆 Top Performers:\n" + "\n".join(
-                    [f"{r['name']} → Avg {round(r['avg_marks'],2)}"
+                if not rows:
+                    return "No data found."
+
+                return "Top Students:\n" + "\n".join(
+                    [f"{r['name']} → {round(r['avg_marks'],2)}"
+                     for r in rows]
+                )
+
+            # Department average
+            if "average attendance" in q:
+                cursor.execute("""
+                    SELECT s.department, AVG(a.percentage) as avg_attendance
+                    FROM attendance a
+                    JOIN students s ON s.student_id = a.student_id
+                    GROUP BY s.department
+                """)
+                rows = cursor.fetchall()
+
+                if not rows:
+                    return "No department data found."
+
+                return "\n".join(
+                    [f"{r['department']} → {round(r['avg_attendance'],2)}%"
                      for r in rows]
                 )
 
         return None
 
     except Exception as e:
-        return "⚠️ Unable to retrieve academic data right now."
+        return "Database error occurred."
 
     finally:
         try:
             cursor.close()
             conn.close()
-        except Exception:
+        except:
             pass
