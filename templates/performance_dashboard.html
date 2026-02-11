@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Performance Dashboard</h2>
+
+<!-- ================= TABLE ================= -->
+<div class="card mt-20">
+  <h3>Marks Table</h3>
+  <table border="1" width="100%">
+    <tr>
+      <th>Name</th>
+      <th>Department</th>
+      <th>Year</th>
+      <th>Subject</th>
+      <th>Marks</th>
+    </tr>
+
+    {% for m in marks_data %}
+    <tr {% if m.marks < 40 %} style="background:#fee2e2" {% endif %}>
+      <td>{{ m.name }}</td>
+      <td>{{ m.department }}</td>
+      <td>{{ m.year }}</td>
+      <td>{{ m.subject }}</td>
+      <td>{{ m.marks }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+
+<!-- ================= SUBJECT AVG ================= -->
+<div class="card mt-20">
+  <h3>Subject-wise Average</h3>
+  <canvas id="subjectChart"></canvas>
+</div>
+
+<!-- ================= DEPARTMENT AVG ================= -->
+<div class="card mt-20">
+  <h3>Department Performance</h3>
+  <canvas id="deptChart"></canvas>
+</div>
+
+<!-- ================= PASS FAIL ================= -->
+<div class="card mt-20">
+  <h3>Pass vs Fail</h3>
+  <canvas id="resultChart"></canvas>
+</div>
+
+<!-- ================= TOPPERS ================= -->
+<div class="card mt-20">
+  <h3>Top 5 Toppers</h3>
+  <canvas id="topperChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+/* Subject Average */
+new Chart(document.getElementById("subjectChart"), {
+  type: 'bar',
+  data: {
+    labels: {{ subject_avg | map(attribute='subject') | list | tojson }},
+    datasets: [{
+      label: "Average Marks",
+      data: {{ subject_avg | map(attribute='avg_marks') | list | tojson }},
+      backgroundColor: "#3b82f6"
+    }]
+  }
+});
+
+/* Department Average */
+new Chart(document.getElementById("deptChart"), {
+  type: 'bar',
+  data: {
+    labels: {{ dept_avg | map(attribute='department') | list | tojson }},
+    datasets: [{
+      label: "Average Marks",
+      data: {{ dept_avg | map(attribute='avg_marks') | list | tojson }},
+      backgroundColor: "#10b981"
+    }]
+  }
+});
+
+/* Pass Fail Pie */
+new Chart(document.getElementById("resultChart"), {
+  type: 'pie',
+  data: {
+    labels: ["Passed", "Failed"],
+    datasets: [{
+      data: [
+        {{ result_data.passed or 0 }},
+        {{ result_data.failed or 0 }}
+      ],
+      backgroundColor: ["#16a34a", "#dc2626"]
+    }]
+  }
+});
+
+/* Toppers */
+new Chart(document.getElementById("topperChart"), {
+  type: 'bar',
+  data: {
+    labels: {{ toppers | map(attribute='name') | list | tojson }},
+    datasets: [{
+      label: "Total Marks",
+      data: {{ toppers | map(attribute='total_marks') | list | tojson }},
+      backgroundColor: "#f59e0b"
+    }]
+  }
+});
+
+</script>
+
+{% endblock %}

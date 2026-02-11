@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- ===================== -->
+<!-- FACULTY DASHBOARD -->
+<!-- ===================== -->
+<div class="hero fade-in">
+  <div class="hero-content">
+    <h1>
+      <i class="fa-solid fa-user-tie"></i>
+      Faculty Dashboard
+    </h1>
+    <p>Manage academic data & use AI assistant</p>
+  </div>
+</div>
+
+<!-- ===================== -->
+<!-- UPLOAD SECTION -->
+<!-- ===================== -->
+<div class="grid mt-20">
+
+  <div class="card">
+    <h3>👨‍🎓 Upload Students</h3>
+    <form method="POST" action="/upload_students" enctype="multipart/form-data">
+      <input type="file" name="excel_file" required>
+      <button type="submit">Upload</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>📊 Upload Attendance</h3>
+    <form method="POST" action="/upload_attendance" enctype="multipart/form-data">
+      <input type="file" name="excel_file" required>
+      <button type="submit">Upload</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>📝 Upload Marks</h3>
+    <form method="POST" action="/upload_marks" enctype="multipart/form-data">
+      <input type="file" name="excel_file" required>
+      <button type="submit">Upload</button>
+    </form>
+  </div>
+
+</div>
+
+<div class="card mt-20">
+  <h3>📅 Upload Exam Schedule</h3>
+  <form method="POST" action="/upload_exam" enctype="multipart/form-data">
+    <input type="file" name="excel_file" required>
+    <button type="submit">Upload Exam Excel</button>
+  </form>
+</div>
+
+<a href="/faculty/send-attendance-warning" class="btn">
+  🚨 Send Attendance Warnings
+</a>
+
+<a href="/faculty/send-performance-warning" class="btn">
+  📉 Send Performance Warnings
+</a>
+
+<a href="/faculty/send-exam-reminder" class="btn">
+  � Send Exam Reminders
+</a>
+
+<a href="/download_class_report" class="btn">
+    📄 Download Class Report
+</a>
+
+
+
+
+<!-- ========================= -->
+<!-- SMART OVERVIEW CARDS -->
+<!-- ========================= -->
+
+<div class="grid mt-20">
+
+  <div class="card">
+    <h3>Total Students</h3>
+    <h1 class="stat-blue">{{ total_students }}</h1>
+  </div>
+
+  <div class="card">
+    <h3>Average Attendance</h3>
+    <h1 class="stat-green">{{ avg_attendance }}%</h1>
+  </div>
+
+  <div class="card">
+    <h3>Class Average Marks</h3>
+    <h1 class="stat-purple">{{ avg_marks }}</h1>
+  </div>
+
+  <div class="card">
+    <h3>Students At Risk</h3>
+    <h1 class="stat-red">{{ risk_students|length }}</h1>
+  </div>
+
+</div>
+<!-- ========================= -->
+<!-- RISK ALERT SECTION -->
+<!-- ========================= -->
+
+<div class="card mt-20">
+  <h3>⚠ Students At Risk</h3>
+
+  {% if risk_students %}
+    <ul style="line-height: 2;">
+      {% for s in risk_students %}
+        <li>
+          <strong style="color:#dc2626;">{{ s.name }}</strong>
+          –
+          <span style="color:#b91c1c;">{{ s.reason }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No risk students 🎉</p>
+  {% endif %}
+</div>
+
+
+<!-- ===================== -->
+<!-- AI CHAT ASSISTANT (FACULTY) -->
+<!-- ===================== -->
+<div class="card fade-in mt-20">
+
+  <h3>
+    <i class="fa-solid fa-robot"></i>
+    CampusMind AI Assistant (Faculty)
+  </h3>
+
+  <p style="font-size:14px; color:#6b7280;">
+    Full academic access enabled. Ask about students, attendance, marks, exams, or documents.
+  </p>
+
+  <!-- CHAT CONTAINER -->
+  <div id="chatBox" class="chat-container">
+
+    <!-- AI WELCOME (LEFT) -->
+    <div class="chat-row ai">
+      <div class="chat-avatar">🤖</div>
+      <div class="chat-bubble ai">
+        Hello Faculty 👋 I can help you with student and academic data.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- INPUT BAR -->
+  <div style="display:flex; gap:10px; margin-top:15px;">
+    <input
+      id="question"
+      placeholder="e.g. Show Ravi attendance, CSE average marks..."
+      style="flex:1;"
+      onkeydown="if(event.key==='Enter') sendMessage()"
+    />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+</div>
+
+<!-- ===================== -->
+<!-- CHAT SCRIPT (LEFT / RIGHT) -->
+<!-- ===================== -->
+<script>
+function sendMessage() {
+  const input = document.getElementById("question");
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  const chatBox = document.getElementById("chatBox");
+
+  /* FACULTY MESSAGE (RIGHT) */
+  const userRow = document.createElement("div");
+  userRow.className = "chat-row user";
+  userRow.innerHTML = `
+    <div class="chat-bubble user">${msg}</div>
+    <div class="chat-avatar">👨‍🏫</div>
+  `;
+  chatBox.appendChild(userRow);
+
+  input.value = "";
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  /* AI TYPING (LEFT) */
+  const typingRow = document.createElement("div");
+  typingRow.className = "chat-row ai";
+  typingRow.id = "typingRow";
+  typingRow.innerHTML = `
+    <div class="chat-avatar">🤖</div>
+    <div class="chat-bubble ai">
+      <div class="typing">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  `;
+  chatBox.appendChild(typingRow);
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  fetch("/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: "question=" + encodeURIComponent(msg)
+  })
+  .then(res => res.text())
+  .then(reply => {
+    typingRow.remove();
+
+    /* AI MESSAGE (LEFT) */
+    const aiRow = document.createElement("div");
+    aiRow.className = "chat-row ai";
+    aiRow.innerHTML = `
+      <div class="chat-avatar">🤖</div>
+      <div class="chat-bubble ai">${reply}</div>
+    `;
+    chatBox.appendChild(aiRow);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
+}
+</script>
+
+{% endblock %}

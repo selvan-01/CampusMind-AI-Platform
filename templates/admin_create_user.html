@@ -1,0 +1,62 @@
+
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+  <h2>👤 Create Student / Faculty Login</h2>
+  <p class="text-muted">Admin can securely generate login credentials</p>
+</div>
+
+<div class="card mt-20">
+
+  <form method="POST" class="form-modern">
+
+    <!-- Username -->
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" name="username" placeholder="Enter username" required>
+    </div>
+
+    <!-- Password -->
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" name="password" placeholder="Enter password" required>
+    </div>
+
+    <!-- Role -->
+    <div class="form-group">
+      <label>Select Role</label>
+      <select name="role" id="roleSelect" onchange="toggleStudentId()">
+        <option value="student">Student</option>
+        <option value="faculty">Faculty</option>
+      </select>
+    </div>
+
+    <!-- Student ID (only if student selected) -->
+    <div class="form-group" id="studentIdField">
+      <label>Student ID</label>
+      <input type="number" name="student_id" placeholder="Enter student ID">
+    </div>
+
+    <button type="submit" class="btn btn-full mt-10">
+      ✅ Create User
+    </button>
+
+  </form>
+
+</div>
+
+<script>
+function toggleStudentId() {
+    const role = document.getElementById("roleSelect").value;
+    const studentField = document.getElementById("studentIdField");
+
+    if (role === "student") {
+        studentField.style.display = "block";
+    } else {
+        studentField.style.display = "none";
+    }
+}
+</script>
+
+{% endblock %}

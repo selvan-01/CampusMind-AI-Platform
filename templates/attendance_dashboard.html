@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Attendance Dashboard</h2>
+
+<!-- Overall Card -->
+<div class="card">
+  <h3>Overall Attendance</h3>
+  <h1>{{ overall.overall_avg|round(2) }}%</h1>
+</div>
+
+<!-- Full Attendance Table -->
+<div class="card mt-20">
+<h3>Student Attendance Records</h3>
+
+<table border="1" width="100%">
+<tr>
+  <th>Name</th>
+  <th>Department</th>
+  <th>Year</th>
+  <th>Subject</th>
+  <th>Attendance %</th>
+</tr>
+
+{% for row in attendance_data %}
+<tr {% if row.percentage < 75 %} style="background:#fdd" {% endif %}>
+  <td>{{ row.name }}</td>
+  <td>{{ row.department }}</td>
+  <td>{{ row.year }}</td>
+  <td>{{ row.subject }}</td>
+  <td>{{ row.percentage }}%</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+
+<!-- Department Average Chart -->
+<div class="card mt-20">
+<h3>Department-wise Attendance</h3>
+<canvas id="deptChart"></canvas>
+</div>
+
+<!-- Pie Chart -->
+<div class="card mt-20">
+<h3>Attendance Distribution</h3>
+<canvas id="pieChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+const deptLabels = [
+{% for d in dept_avg %}
+  "{{ d.department }}",
+{% endfor %}
+];
+
+const deptData = [
+{% for d in dept_avg %}
+  {{ d.avg_attendance|round(2) }},
+{% endfor %}
+];
+
+new Chart(document.getElementById("deptChart"), {
+  type: "bar",
+  data: {
+    labels: deptLabels,
+    datasets: [{
+      label: "Avg Attendance %",
+      data: deptData,
+      backgroundColor: "rgba(54, 162, 235, 0.6)"
+    }]
+  }
+});
+
+new Chart(document.getElementById("pieChart"), {
+  type: "pie",
+  data: {
+    labels: deptLabels,
+    datasets: [{
+      data: deptData
+    }]
+  }
+});
+</script>
+
+{% endblock %}

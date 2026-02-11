@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Student Dashboard</h2>
+
+<div class="card mt-20">
+  <h3>Total Students: {{ students|length }}</h3>
+</div>
+
+<!-- ================= STUDENT TABLE ================= -->
+<div class="card mt-20">
+  <h3>Student List</h3>
+  <table border="1" width="100%">
+    <tr>
+      <th>ID</th>
+      <th>Name</th>
+      <th>Department</th>
+      <th>Year</th>
+    </tr>
+
+    {% for s in students %}
+    <tr>
+      <td>{{ s.student_id }}</td>
+      <td>{{ s.name }}</td>
+      <td>{{ s.department }}</td>
+      <td>{{ s.year }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+
+<!-- ================= GRAPHS ================= -->
+
+<div class="card mt-20">
+  <h3>Students by Department</h3>
+  <canvas id="deptChart"></canvas>
+</div>
+
+<div class="card mt-20">
+  <h3>Pass vs Fail</h3>
+  <canvas id="resultChart"></canvas>
+</div>
+
+<div class="card mt-20">
+  <h3>Year Distribution</h3>
+  <canvas id="yearChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+/* Department Chart */
+const deptCtx = document.getElementById('deptChart');
+
+new Chart(deptCtx, {
+  type: 'bar',
+  data: {
+    labels: {{ dept_data | map(attribute='department') | list | tojson }},
+    datasets: [{
+      label: 'Students',
+      data: {{ dept_data | map(attribute='total') | list | tojson }},
+      backgroundColor: '#4f46e5'
+    }]
+  }
+});
+
+/* Pass Fail Pie */
+const resultCtx = document.getElementById('resultChart');
+
+new Chart(resultCtx, {
+  type: 'pie',
+  data: {
+    labels: ['Passed', 'Failed'],
+    datasets: [{
+      data: [
+        {{ result_data.passed or 0 }},
+        {{ result_data.failed or 0 }}
+      ],
+      backgroundColor: ['#16a34a','#dc2626']
+    }]
+  }
+});
+
+/* Year Distribution */
+const yearCtx = document.getElementById('yearChart');
+
+new Chart(yearCtx, {
+  type: 'bar',
+  data: {
+    labels: {{ year_data | map(attribute='year') | list | tojson }},
+    datasets: [{
+      label: 'Students',
+      data: {{ year_data | map(attribute='total') | list | tojson }},
+      backgroundColor: '#0ea5e9'
+    }]
+  }
+});
+</script>
+
+{% endblock %}

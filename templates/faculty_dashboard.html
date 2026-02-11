@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Faculty Dashboard</h2>
+
+<div class="card">
+    <h3>Faculty List</h3>
+    <table border="1" width="100%">
+        <tr>
+            <th>Name</th>
+            <th>Department</th>
+            <th>Subject</th>
+            <th>Email</th>
+        </tr>
+        {% for f in faculty %}
+        <tr>
+            <td>{{ f.name }}</td>
+            <td>{{ f.department }}</td>
+            <td>{{ f.subject }}</td>
+            <td>{{ f.email }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="card mt-20">
+    <h3>Faculty Distribution by Department</h3>
+    <canvas id="facultyChart"></canvas>
+</div>
+
+<script>
+const labels = {{ dept_data | map(attribute='department') | list | tojson }};
+const values = {{ dept_data | map(attribute='total') | list | tojson }};
+
+new Chart(document.getElementById("facultyChart"), {
+    type: "pie",
+    data: {
+        labels: labels,
+        datasets: [{
+            data: values,
+            backgroundColor: [
+                "#4CAF50",
+                "#2196F3",
+                "#FF9800",
+                "#E91E63"
+            ]
+        }]
+    },
+    options: {
+        responsive: true
+    }
+});
+</script>
+
+{% endblock %}

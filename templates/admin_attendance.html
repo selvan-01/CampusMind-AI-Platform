@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Attendance Dashboard</h2>
+
+<form method="GET">
+  Department:
+  <input name="department" required>
+
+  Year:
+  <input name="year" required>
+
+  <button type="submit">View</button>
+</form>
+
+<table border="1" cellpadding="10">
+  <tr>
+    <th>Student</th>
+    <th>Subject</th>
+    <th>Attendance %</th>
+  </tr>
+
+  {% for r in records %}
+  <tr>
+    <td>{{ r.name }}</td>
+    <td>{{ r.subject }}</td>
+    <td>{{ r.percentage }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+{% endblock %}

@@ -1,0 +1,10 @@
+flask
+mysql-connector-python
+pandas
+openpyxl
+pdfplumber
+sentence-transformers
+langchain
+faiss-cpu
+apscheduler
+

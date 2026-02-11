@@ -1,0 +1,22 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Environment files
+.env
+.env.*
+
+# Database
+*.db
+
+# PDF / Generated Files
+*.pdf
+*.png
+
+# VS Code
+.vscode/
+
+# System files
+.DS_Store
+Thumbs.db

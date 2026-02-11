@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CAMPUSMIND</title>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/modern.css">
+</head>
+
+<body class="light">
+
+<!-- 🌗 THEME TOGGLE -->
+<button onclick="toggleTheme()" class="theme-btn">
+    🌙
+</button>
+
+<!-- 🔹 SIDEBAR -->
+<div class="sidebar">
+    <h2>
+        <i class="fa-solid fa-brain"></i>
+        CAMPUSMIND
+    </h2>
+
+    {% if session.get("role") == "admin" %}
+        <a href="/admin"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
+    {% endif %}
+
+    {% if session.get("role") == "student" %}
+        <a href="/student"><i class="fa-solid fa-robot"></i> AI Assistant</a>
+    {% endif %}
+
+    {% if session.get("role") == "faculty" %}
+        <a href="/faculty"><i class="fa-solid fa-user-tie"></i> Faculty Panel</a>
+    {% endif %}
+
+    <a href="/logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+</div>
+
+<!-- 🔹 MAIN CONTENT -->
+<div class="main">
+
+    <!-- 👋 ROLE BASED WELCOME -->
+    {% if session.get("role") %}
+    <div class="welcome-text fade-in">
+        👋 Welcome {{ session.get("role") | capitalize }}
+    </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+</div>
+
+<!-- 🔹 GLOBAL JS -->
+<script src="/static/js/counter.js"></script>
+<script src="/static/js/theme.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</body>
+</html>

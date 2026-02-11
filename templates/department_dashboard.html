@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Department Dashboard</h2>
+
+<!-- Student Count -->
+<div class="card">
+  <h3>Total Students by Department</h3>
+  <canvas id="studentChart"></canvas>
+</div>
+
+<!-- Marks Chart -->
+<div class="card mt-20">
+  <h3>Average Marks by Department</h3>
+  <canvas id="marksChart"></canvas>
+</div>
+
+<!-- Attendance Chart -->
+<div class="card mt-20">
+  <h3>Average Attendance by Department</h3>
+  <canvas id="attendanceChart"></canvas>
+</div>
+
+<!-- Student List -->
+<div class="card mt-20">
+<h3>Student List</h3>
+<table border="1" width="100%">
+<tr>
+  <th>Name</th>
+  <th>Department</th>
+  <th>Year</th>
+</tr>
+
+{% for s in student_list %}
+<tr>
+  <td>{{ s.name }}</td>
+  <td>{{ s.department }}</td>
+  <td>{{ s.year }}</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+const deptLabels = [
+{% for d in student_count %}
+  "{{ d.department }}",
+{% endfor %}
+];
+
+const studentData = [
+{% for d in student_count %}
+  {{ d.total_students }},
+{% endfor %}
+];
+
+const marksData = [
+{% for d in avg_marks %}
+  {{ d.avg_marks|round(2) }},
+{% endfor %}
+];
+
+const attendanceData = [
+{% for d in avg_attendance %}
+  {{ d.avg_attendance|round(2) }},
+{% endfor %}
+];
+
+// Students Bar
+new Chart(document.getElementById("studentChart"), {
+  type: "bar",
+  data: {
+    labels: deptLabels,
+    datasets: [{
+      label: "Total Students",
+      data: studentData,
+      backgroundColor: "rgba(75, 192, 192, 0.6)"
+    }]
+  }
+});
+
+// Marks Line
+new Chart(document.getElementById("marksChart"), {
+  type: "line",
+  data: {
+    labels: deptLabels,
+    datasets: [{
+      label: "Average Marks",
+      data: marksData,
+      borderColor: "blue",
+      fill: false
+    }]
+  }
+});
+
+// Attendance Pie
+new Chart(document.getElementById("attendanceChart"), {
+  type: "pie",
+  data: {
+    labels: deptLabels,
+    datasets: [{
+      data: attendanceData
+    }]
+  }
+});
+</script>
+
+{% endblock %}

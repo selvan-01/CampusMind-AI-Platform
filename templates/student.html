@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- ===================== -->
+<!-- STUDENT DASHBOARD -->
+<!-- ===================== -->
+
+<div class="hero fade-in">
+  <div class="hero-content">
+    <h1>
+      <i class="fa-solid fa-graduation-cap"></i>
+      Student Dashboard
+    </h1>
+    <p>Your academic overview & AI assistant</p>
+  </div>
+</div>
+
+<!-- ===================== -->
+<!-- EXAM RESULT CARD -->
+<!-- ===================== -->
+{% if result %}
+<div class="card fade-in mt-20">
+  <h3>📄 Latest Exam Result</h3>
+
+  <p><strong>Semester:</strong> {{ result.semester }}</p>
+  <p><strong>Year:</strong> {{ result.year }}</p>
+  <p><strong>Marks:</strong> {{ result.marks }}</p>
+
+  {% if result.result == "PASS" %}
+    <h2 class="stat-green">✅ PASS</h2>
+  {% else %}
+    <h2 class="stat-red">❌ FAIL</h2>
+  {% endif %}
+
+  <a href="/download_result" class="btn mt-20">
+    📄 Download Result PDF
+  </a>
+</div>
+{% else %}
+<div class="card fade-in mt-20">
+  <p>📌 No exam result published yet.</p>
+</div>
+{% endif %}
+
+<!-- ===================== -->
+<!-- AI CHAT ASSISTANT -->
+<!-- ===================== -->
+<div class="card fade-in mt-20">
+
+  <h3>
+    <i class="fa-solid fa-robot"></i>
+    Student AI Assistant
+  </h3>
+
+  <p style="font-size:14px; color:#6b7280;">
+    Ask only about <strong>your</strong> attendance, marks, results, rules…
+  </p>
+
+  <!-- CHAT BOX -->
+  <div id="chatBox" class="chat-box">
+
+    <!-- AI WELCOME -->
+    <div class="chat-row ai">
+      <div class="chat-avatar">🤖</div>
+      <div class="chat-bubble ai">
+        Hi! I’m your CampusMind AI. Ask me about your academics 🙂
+      </div>
+    </div>
+
+  </div>
+
+  <!-- INPUT BAR -->
+  <div class="chat-input">
+    <input
+      id="question"
+      placeholder="Type your question…"
+      onkeydown="if(event.key==='Enter') sendMessage()"
+    />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+</div>
+
+<!-- ===================== -->
+<!-- CHAT SCRIPT -->
+<!-- ===================== -->
+<script>
+function sendMessage() {
+  const input = document.getElementById("question");
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  const chatBox = document.getElementById("chatBox");
+
+  // USER MESSAGE (RIGHT)
+  const userRow = document.createElement("div");
+  userRow.className = "chat-row user";
+  userRow.innerHTML = `
+    <div class="chat-bubble user">${msg}</div>
+    <div class="chat-avatar">🎓</div>
+  `;
+  chatBox.appendChild(userRow);
+
+  input.value = "";
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  // AI TYPING
+  const typingRow = document.createElement("div");
+  typingRow.className = "chat-row ai";
+  typingRow.id = "typingRow";
+  typingRow.innerHTML = `
+    <div class="chat-avatar">🤖</div>
+    <div class="chat-bubble ai">Typing…</div>
+  `;
+  chatBox.appendChild(typingRow);
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  fetch("/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: "question=" + encodeURIComponent(msg)
+  })
+  .then(res => res.text())
+  .then(reply => {
+    typingRow.remove();
+
+    const aiRow = document.createElement("div");
+    aiRow.className = "chat-row ai";
+    aiRow.innerHTML = `
+      <div class="chat-avatar">🤖</div>
+      <div class="chat-bubble ai">${reply}</div>
+    `;
+    chatBox.appendChild(aiRow);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
+}
+</script>
+
+{% endblock %}

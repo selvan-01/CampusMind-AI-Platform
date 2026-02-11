@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>{{ student.name }} — Student Profile</h2>
+<p>Department: {{ student.department }}</p>
+<p>Year: {{ student.year }}</p>
+
+<h3>Attendance</h3>
+<ul>
+{% for a in attendance %}
+  <li>{{ a.subject }} — {{ a.percentage }}%</li>
+{% endfor %}
+</ul>
+
+<h3>Marks</h3>
+<ul>
+{% for m in marks %}
+  <li>{{ m.subject }} — {{ m.marks }}</li>
+{% endfor %}
+</ul>
+
+{% endblock %}

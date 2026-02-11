@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CampusMind | Login</title>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap"
+          rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/login.css">
+</head>
+<body class="light">
+
+<!-- 🌗 THEME TOGGLE -->
+<div class="theme-toggle" onclick="toggleTheme()">
+    <i class="fa-solid fa-moon"></i>
+</div>
+
+<div class="login-container">
+
+    <!-- LEFT BRAND SECTION -->
+    <div class="brand-panel">
+        <h1>CAMPUSMIND</h1>
+        <p>AI-Powered College Management Platform</p>
+
+        <ul>
+            <li><i class="fa-solid fa-robot"></i> Intelligent AI Assistant</li>
+            <li><i class="fa-solid fa-database"></i> Academic Intelligence</li>
+            <li><i class="fa-solid fa-envelope"></i> Autonomous Email Agents</li>
+        </ul>
+    </div>
+
+    <!-- RIGHT LOGIN CARD -->
+    <div class="login-card fade-in">
+
+        <!-- ROLE MESSAGE (STATIC FOR NOW – BACKEND READY) -->
+        <h2>Welcome Back 👋</h2>
+        <p class="subtitle">Login to access your dashboard</p>
+
+        <!-- ❌ ERROR MESSAGE -->
+        {% if error %}
+        <div class="error-msg shake">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="POST">
+
+            <!-- USERNAME -->
+            <div class="input-group">
+                <i class="fa-solid fa-user"></i>
+                <input type="text" name="username" placeholder="Username" required>
+            </div>
+
+            <!-- PASSWORD -->
+            <div class="input-group">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" name="password" placeholder="Password" required>
+            </div>
+
+            <!-- REMEMBER ME -->
+            <div class="remember-row">
+                <label>
+                    <input type="checkbox" name="remember">
+                    Remember me
+                </label>
+            </div>
+
+            <!-- LOGIN BUTTON -->
+            <button type="submit">
+                Login
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+
+        </form>
+
+        <p class="footer-text">
+            © 2026 Mother Teresa College of Engineering & Technology
+        </p>
+    </div>
+
+</div>
+
+<!-- 🔥 THEME SCRIPT -->
+<script>
+function toggleTheme() {
+    const body = document.body;
+    body.classList.toggle("dark");
+    body.classList.toggle("light");
+}
+</script>
+
+</body>
+</html>

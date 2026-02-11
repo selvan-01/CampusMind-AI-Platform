@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="dashboard-container">
+
+<!-- ===================== -->
+<!-- HERO SECTION -->
+<!-- ===================== -->
+<div class="hero fade-in">
+  <div class="hero-content">
+    <span class="badge-green">
+      AI Powered Campus Platform
+    </span>
+    <h1>MOTHER TERESA COLLEGE OF ENGINEERING AND TECHNOLOGY</h1>
+    <p>AI-Powered Academic Intelligence Platform (Admin Control Panel)</p>
+  </div>
+</div>
+
+
+<!-- ===================== -->
+<!-- ADMIN QUICK ACTIONS -->
+<!-- ===================== -->
+<div class="grid mt-20">
+
+  <!-- USER MANAGEMENT -->
+  <div class="card fade-in">
+    <h3><i class="fa-solid fa-user-plus"></i> User Management</h3>
+    <p>Create login credentials for students & faculty</p>
+    <a href="/admin/create_user" class="btn btn-full">
+      ➕ Create Student / Faculty Login
+    </a>
+
+    <a href="/admin/users" class="btn btn-full mt-10">
+      👥 Manage All Users
+    </a>
+  </div>
+
+  <!-- DOCUMENT UPLOAD -->
+  <div class="card fade-in">
+    <h3><i class="fa-solid fa-file-pdf"></i> Upload College Documents</h3>
+    <p>Rules, regulations & policy PDFs for AI access</p>
+
+    <form method="POST" action="/upload_pdf" enctype="multipart/form-data" class="form-stack">
+      <input type="file" name="pdf_file" required>
+      <button type="submit" class="btn btn-full">Upload PDF</button>
+    </form>
+  </div>
+
+  <!-- ANALYTICS ACTIONS -->
+  <div class="card fade-in">
+    <h3><i class="fa-solid fa-chart-line"></i> Analytics</h3>
+    <p>View detailed dashboards</p>
+
+    <a href="/download_insights" class="btn btn-full">
+      📄 Download Insight Report
+    </a>
+
+    <a href="/admin/departments" class="btn btn-full mt-10">
+      📊 Department Dashboard
+    </a>
+
+    <a href="/admin/attendance-dashboard" class="btn btn-full mt-10">
+      📈 Attendance Dashboard
+    </a>
+
+    <a href="/admin/performance-dashboard" class="btn btn-full mt-10">
+      📊 Performance Dashboard
+    </a>
+    <a href="/admin/faculty-dashboard" class="btn btn-full mt-10">
+      👩‍🏫 Faculty Dashboard
+    </a>
+    <a href="/admin/student_dashboard" class="btn btn-full">
+      🎓 Student Dashboard
+    </a>
+
+    
+
+
+  </div>
+
+</div>
+
+
+<!-- ===================== -->
+<!-- INSIGHTS CARDS -->
+<!-- ===================== -->
+<div class="grid mt-20">
+
+  <div class="card">
+    <h3><i class="fa-solid fa-users"></i> Total Students</h3>
+    <h1 class="stat-green">{{ insights.total_students }}</h1>
+    <p>Active student records</p>
+  </div>
+
+  <div class="card">
+    <h3><i class="fa-solid fa-chart-column"></i> Average Marks</h3>
+    <h1 class="stat-blue">{{ insights.avg_marks }}</h1>
+    <p>Overall academic performance</p>
+  </div>
+
+  <div class="card">
+    <h3><i class="fa-solid fa-triangle-exclamation"></i> Students at Risk</h3>
+    <h1 class="stat-red">{{ insights.risk_students }}</h1>
+    <p>Marks below pass threshold</p>
+  </div>
+
+</div>
+
+
+<!-- ===================== -->
+<!-- DEPARTMENT ATTENDANCE -->
+<!-- ===================== -->
+<div class="card mt-20">
+  <h3><i class="fa-solid fa-building-columns"></i> Department-wise Attendance</h3>
+
+  <ul class="dept-list">
+    {% for d in insights.dept_attendance %}
+      <li>
+        <strong>{{ d.department }}</strong>
+        <span>{{ d.avg_attendance | round(2) }}%</span>
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+
+
+<!-- ===================== -->
+<!-- ATTENDANCE BAR CHART -->
+<!-- ===================== -->
+<div class="card mt-20">
+  <h3><i class="fa-solid fa-chart-bar"></i> Attendance Analytics</h3>
+  <canvas id="attendanceChart"></canvas>
+</div>
+
+
+<!-- ===================== -->
+<!-- AI ASSISTANT -->
+<!-- ===================== -->
+<div class="card mt-20">
+
+  <h3><i class="fa-solid fa-robot"></i> CampusMind AI Assistant (Admin)</h3>
+  <p class="sub-text">
+    Full access enabled. Ask about any student, department, document, or system insight.
+  </p>
+
+  <div id="chatBox" class="chat-container">
+    <div class="chat-row ai">
+      <div class="chat-avatar">🤖</div>
+      <div class="chat-bubble ai">
+        Hello Admin 👋 I have full campus access. How can I help you?
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-input">
+    <input id="question"
+           placeholder="Ask CampusMind AI…"
+           onkeydown="if(event.key==='Enter') sendMessage()">
+    <button class="btn" onclick="sendMessage()">Send</button>
+  </div>
+
+</div>
+
+</div> <!-- END CONTAINER -->
+
+
+<!-- ===================== -->
+<!-- CHART SCRIPT -->
+<!-- ===================== -->
+<script>
+const labels = {{ insights.dept_attendance | map(attribute='department') | list | tojson }};
+const values = {{ insights.dept_attendance | map(attribute='avg_attendance') | list | tojson }};
+
+new Chart(document.getElementById("attendanceChart"), {
+  type: "bar",
+  data: {
+    labels: labels,
+    datasets: [{
+      label: "Average Attendance %",
+      data: values,
+      backgroundColor: "rgba(54, 162, 235, 0.7)"
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false }
+    }
+  }
+});
+</script>
+
+
+<!-- ===================== -->
+<!-- CHAT SCRIPT -->
+<!-- ===================== -->
+<script>
+function sendMessage() {
+  const input = document.getElementById("question");
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  const chatBox = document.getElementById("chatBox");
+
+  chatBox.innerHTML += `
+    <div class="chat-row user">
+      <div class="chat-bubble user">${msg}</div>
+      <div class="chat-avatar">🛡️</div>
+    </div>
+  `;
+
+  input.value = "";
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  fetch("/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: "question=" + encodeURIComponent(msg)
+  })
+  .then(res => res.text())
+  .then(reply => {
+    chatBox.innerHTML += `
+      <div class="chat-row ai">
+        <div class="chat-avatar">🤖</div>
+        <div class="chat-bubble ai">${reply}</div>
+      </div>
+    `;
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
+}
+</script>
+
+{% endblock %}

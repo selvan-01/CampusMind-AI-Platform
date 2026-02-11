@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>✏ Edit User</h2>
+
+<div class="card mt-20">
+
+<form method="POST">
+
+    <div class="form-group">
+        <label>Username</label>
+        <input type="text" name="username" value="{{ user.username }}" required>
+    </div>
+
+    <div class="form-group">
+        <label>Role</label>
+        <select name="role">
+            <option value="admin" {% if user.role=="admin" %}selected{% endif %}>Admin</option>
+            <option value="faculty" {% if user.role=="faculty" %}selected{% endif %}>Faculty</option>
+            <option value="student" {% if user.role=="student" %}selected{% endif %}>Student</option>
+        </select>
+    </div>
+
+    <button class="btn btn-full mt-10">Update User</button>
+
+</form>
+
+</div>
+
+{% endblock %}
