@@ -1163,7 +1163,7 @@ def logout():
 
 
 
-@app.route("/faculty/send-attendance-warning")
+'''@app.route("/faculty/send-attendance-warning")
 def send_attendance_warning():
     if session.get("role") != "faculty":
         return redirect("/")
@@ -1193,7 +1193,53 @@ def send_attendance_warning():
 
         send_email(student["email"], "Attendance Warning", body)
 
-    return "Attendance Warning Emails Sent"
+    return "Attendance Warning Emails Sent"'''
+
+@app.route("/faculty/send-attendance-warning")
+def send_attendance_warning():
+
+    if session.get("role") != "faculty":
+        return redirect("/")
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT s.name, s.email,
+               AVG(a.percentage) AS avg_attendance
+        FROM students s
+        LEFT JOIN attendance a
+        ON s.student_id = a.student_id
+        GROUP BY s.student_id
+        HAVING avg_attendance IS NOT NULL
+        AND avg_attendance < 75
+    """)
+
+    students = cursor.fetchall()
+
+    print("Attendance warning list:", students)
+
+    cursor.close()
+    conn.close()
+
+    if not students:
+        return "No students below attendance threshold."
+
+    for student in students:
+        body = f"""
+        <h3>Attendance Warning</h3>
+        <p>Dear {student['name']},</p>
+        <p>Your average attendance is {round(student['avg_attendance'],2)}%.</p>
+        <p>Please improve immediately.</p>
+        """
+
+        send_email(
+            student["email"],
+            "Attendance Warning",
+            body
+        )
+
+    return "Attendance Warning Emails Sent Successfully"
 
 
 @app.route("/faculty/send-performance-warning")
@@ -1433,11 +1479,11 @@ scheduler.start()
 
 
 # ================= RUN =================
-i'''f __name__ == "__main__":
-    app.run(debug=True)'''
+if __name__ == "__main__":
+    app.run(debug=True)
 
 #import os
 
-if __name__ == "__main__":
+'''if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port)'''
