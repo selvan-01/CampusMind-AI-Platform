@@ -44,6 +44,26 @@
 
 {% endif %}
 
+<div class="card mt-4 p-3">
+    <h3>📚 Study Materials / Notes</h3>
+
+    {% if notes and notes|length > 0 %}
+        {% for note in notes %}
+            <div style="margin-bottom:15px;">
+                <h5>{{ note.title }}</h5>
+                <p>Uploaded by: {{ note.uploaded_by }}</p>
+
+                <a href="/download_notes/{{ note.filename }}" class="btn btn-success">
+                    ⬇ Download
+                </a>
+            </div>
+            <hr>
+        {% endfor %}
+    {% else %}
+        <p>No notes available</p>
+    {% endif %}
+</div>
+
 <!-- ===================== -->
 <!-- 📊 Academic Analytics -->
 <!-- ===================== -->
@@ -104,6 +124,7 @@
     <button onclick="sendMessage()">Send</button>
   </div>
 </div>
+
 
 <!-- ===================== -->
 <!-- CHART SCRIPT -->

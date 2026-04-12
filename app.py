@@ -198,9 +198,6 @@ def student():
 
     student_id = session.get("student_id")
 
-    # Debug print (remove later)
-    print("Logged Student ID:", student_id)
-
     if not student_id:
         return "Student ID not found in session. Please login again."
 
@@ -252,6 +249,14 @@ def student():
     overall_row = cursor.fetchone()
     overall_attendance = overall_row["overall"] if overall_row["overall"] else 0
 
+    # ======================
+    # 5️⃣ 📚 FETCH NOTES (FINAL FIX)
+    # ======================
+    cursor.execute("SELECT id, title, filename, uploaded_by FROM notes")
+    notes = cursor.fetchall()
+
+    print("DEBUG NOTES:", notes)  # 👈 check terminal
+
     cursor.close()
     conn.close()
 
@@ -260,11 +265,9 @@ def student():
         marks_data=marks_data,
         latest_result=latest_result,
         attendance_data=attendance_data,
-        overall_attendance=round(overall_attendance, 2)
+        overall_attendance=round(overall_attendance, 2),
+        notes=notes   # 🔥 VERY IMPORTANT
     )
-
-
-
 '''@app.route("/admin/departments")
 def admin_departments():
     if session.get("role") != "admin":
@@ -1469,7 +1472,45 @@ def download_class_report():
 
     return send_file(file_path, as_attachment=True)
 
+
+
+@app.route("/upload_notes", methods=["POST"])
+def upload_notes():
+    if session.get("role") != "faculty":
+        return redirect("/")
+
+    file = request.files["notes_file"]
+    title = request.form["title"]
+
+    os.makedirs("uploads/notes", exist_ok=True)
+
+    filepath = os.path.join("uploads/notes", file.filename)
+    file.save(filepath)
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "INSERT INTO notes (title, filename, uploaded_by) VALUES (%s, %s, %s)",
+        (title, file.filename, session["username"])
+    )
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return "✅ Notes uploaded successfully"
+
+
+
     
+@app.route("/download_notes/<filename>")
+def download_notes(filename):
+    return send_file(f"uploads/notes/{filename}", as_attachment=True)
+
+
+
+
 # ================= SCHEDULER =================
 scheduler = BackgroundScheduler(daemon=True)
 scheduler.add_job(low_attendance_agent, "interval", days=1)
@@ -1481,9 +1522,3 @@ scheduler.start()
 # ================= RUN =================
 if __name__ == "__main__":
     app.run(debug=True)
-
-#import os
-
-'''if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)'''

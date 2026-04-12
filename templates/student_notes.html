@@ -1,0 +1,20 @@
+<!-- 📚 Notes Section -->
+<div class="card mt-4 p-3">
+    <h3>📚 Study Materials / Notes</h3>
+
+    {% if notes %}
+        {% for note in notes %}
+            <div style="margin-bottom:10px;">
+                <strong>{{ note.title }}</strong><br>
+                <small>Uploaded by: {{ note.uploaded_by }}</small><br>
+
+                <a href="/download_notes/{{ note.filename }}" class="btn btn-primary btn-sm">
+                    ⬇ Download
+                </a>
+            </div>
+            <hr>
+        {% endfor %}
+    {% else %}
+        <p>No notes available</p>
+    {% endif %}
+</div>

@@ -690,4 +690,13 @@ WHERE student_id = 101;
 SELECT * FROM marks WHERE student_id = 101;
 
 
+CREATE TABLE notes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255),
+    filename VARCHAR(255),
+    uploaded_by VARCHAR(100),
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
 
