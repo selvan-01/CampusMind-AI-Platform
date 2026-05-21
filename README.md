@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="github-banner.png" alt="Campus Mind Banner" width="100%">
+</p>
+
 # 🎓 CampusMind AI Platform
 
 > 🚀 An AI-powered, role-based Academic Intelligence System for modern colleges
